@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mini World * Cloud Server</title>
+    <style>
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; 
+        }
+        body {
+            background: #0a0c15;
+            font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #eef2ff;
+            overflow-x: hidden;
+            position: relative;
+        }
+        canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        /* Welcome Overlay */
+        .welcome-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(3, 7, 18, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .welcome-box {
+            background: rgba(18, 25, 45, 0.95);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            border-radius: 2rem;
+            padding: 2rem 2rem;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(139, 92, 246, 0.3);
+            backdrop-filter: blur(8px);
+        }
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #c084fc, #60a5fa, #f472b6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .welcome-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #9ca3af;
+            margin-bottom: 2rem;
+        }
+        .welcome-btn {
+            background: linear-gradient(105deg, #8b5cf6, #ec4899);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 14px rgba(139, 92, 246, 0.4);
+        }
+        .welcome-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.5);
+        }
+
+        /* Turtle Toast */
+        .turtle-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            border-left: 4px solid #10b981;
+            padding: 0.8rem 1.5rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 35px -10px black;
+            z-index: 10000;
+            width: 90%;
+            max-width: 400px;
+            transition: top 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .turtle-toast.show {
+            top: 20px;
+            opacity: 1;
+        }
+        .turtle-img {
+            width: 40px;
+            height: 40px;
+            filter: drop-shadow(0 0 4px #10b981);
+        }
+        .turtle-msg {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 680px;
+            padding: 20px;
+            margin-top: 30px;
+            pointer-events: none;
+        }
+        .card, .header-bar, .my-name, .admin-contact-box, .music-panel {
+            pointer-events: auto;
+        }
+
+        /* Header */
+        .header-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .glass-btn.active {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            color: white;
+            box-shadow: 0 0 12px rgba(59,130,246,0.4);
+        }
+        .music-btn {
+            background: rgba(236, 72, 153, 0.2);
+            border: 1px solid rgba(236,72,153,0.4);
+            color: #f9a8d4;
+        }
+
+        /* Name */
+        .my-name {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            background: linear-gradient(115deg, #a78bfa, #38bdf8, #f472b6);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: shimmer 5s linear infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Admin card link */
+        .admin-contact-box {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .admin-link {
+            background: rgba(96, 165, 250, 0.1);
+            backdrop-filter: blur(4px);
+            padding: 10px 22px;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #93c5fd;
+            text-decoration: none;
+            border: 1px solid rgba(59,130,246,0.3);
+            display: inline-block;
+            transition: 0.2s;
+        }
+        .admin-link:hover {
+            background: #2563eb;
+            color: white;
+            border-color: #60a5fa;
+            box-shadow: 0 6px 14px rgba(37,99,235,0.3);
+        }
+
+        /* Main card */
+        .card {
+            background: rgba(10, 16, 28, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 28px;
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 25px 40px -15px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+
+        /* Form groups */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+        .input-group-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        input, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #2d3a5e;
+            border-radius: 20px;
+            padding: 12px 16px;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        input:focus, select:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+        }
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='white' viewBox='0 0 24 24'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+        .btn-side {
+            background: linear-gradient(95deg, #10b981, #059669);
+            border: none;
+            border-radius: 40px;
+            padding: 0 20px;
+            height: 46px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .btn-side:disabled {
+            background: #334155;
+            cursor: default;
+            opacity: 0.6;
+        }
+
+        .btn-wrapper {
+            position: relative;
+            margin-top: 10px;
+        }
+        .btn-trigger-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 5;
+            display: none;
+            cursor: not-allowed;
+            border-radius: 60px;
+        }
+        .btn-wrapper.cooldown-active .btn-trigger-overlay {
+            display: block;
+        }
+        .btn-main {
+            width: 100%;
+            background: linear-gradient(105deg, #8b5cf6, #3b82f6);
+            border: none;
+            padding: 14px;
+            border-radius: 60px;
+            font-weight: 800;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 5px 15px rgba(59,130,246,0.4);
+        }
+        .btn-main:disabled {
+            background: #2d3748;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Log box */
+        .log-box {
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 20px;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 6px;
+        }
+        .log-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #60a5fa;
+            letter-spacing: 1px;
+        }
+        .log-clear {
+            background: none;
+            border: none;
+            color: #f87171;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .log-area {
+            background: #03060e80;
+            border-radius: 20px;
+            padding: 12px;
+            height: 170px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.7rem;
+            color: #86efac;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.65rem;
+            color: #475569;
+            margin-top: 8px;
+        }
+
+        @keyframes pulseBorder {
+            0% { border-color: rgba(139, 92, 246, 0.2); }
+            100% { border-color: rgba(139, 92, 246, 0.7); }
+        }
+    </style>
+</head>
+<body>
+<div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-box">
+        <div class="welcome-title" id="welcomeTitle">Mini World Cloud</div>
+        <div class="welcome-text" id="welcomeText">Selamat datang di layanan cloud vcminh. Sistem optimasi ruang game siap. Raih keberuntunganmu!</div>
+        <button class="welcome-btn" id="welcomeCloseBtn">✦ Mulai Sekarang ✦</button>
+    </div>
+</div>
+
+<div class="turtle-toast" id="turtleToast">
+    <img class="turtle-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path fill='%2310b981' d='M32 10c-8 0-14 6-14 14 0 3 1 5 2 7-3 2-5 6-5 10 0 6 5 11 11 11h12c6 0 11-5 11-11 0-4-2-8-5-10 1-2 2-4 2-7 0-8-6-14-14-14zm0 6c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7z'/></svg>">
+    <div class="turtle-msg" id="turtleMsg">Sabarlah seperti kura-kura laut ~</div>
+</div>
+
+<canvas id="meteorCanvas"></canvas>
+
+<div class="container">
+    <div class="header-bar">
+        <button class="glass-btn music-btn" id="musicBtn">🎵 MUSIC OFF</button>
+        <button class="glass-btn lang-btn" data-lang="id">🇮🇩 ID</button>
+        <button class="glass-btn lang-btn" data-lang="vn">🇻🇳 VN</button>
+        <button class="glass-btn lang-btn" data-lang="en">🇬🇧 EN</button>
+    </div>
+
+    <div class="my-name">MINI WORLD * CLOUD</div>
+
+    <div class="admin-contact-box">
+        <a class="admin-link" href="https://www.facebook.com/vcminh1804" target="_blank" id="adminLinkText">🌐 Hubungi Admin Update IDMap</a>
+    </div>
+
+    <div class="card">
+        <div class="form-group">
+            <div class="form-label" id="labelSelectRoom">🏠 PILIH RUANG</div>
+            <select id="roomSelect">
+                <option value="">Memuat ruang...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <div class="form-label" id="labelUid">🆔 UID (10 digit) + Region</div>
+            <div class="input-group-row">
+                <input type="number" id="uid" placeholder="Masukkan UID...">
+                <select id="regionSelect">
+                    <option value="1">English</option><option value="2">繁體中文</option><option value="3">ภาษาไทย</option>
+                    <option value="4">Español</option><option value="5">Português</option><option value="6">Français</option>
+                    <option value="7">日本語</option><option value="8">العربية</option><option value="9">한국어</option>
+                    <option value="10">Tiếng Việt</option><option value="11">Русский</option><option value="12">Türkçe</option>
+                    <option value="13">Italiano</option><option value="14">Deutsch</option><option value="15">Indonesia</option>
+                    <option value="16">Malaysia</option>
+                </select>
+                <button class="btn-side" id="loadRecentBtn">📁 Ambil Map</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="form-label" id="labelRecentMaps">🗺️ MAP TERBARU</div>
+            <select id="recentSelect">
+                <option value="">Belum ada data map</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <div class="form-label" id="labelAid">🔑 KODE WID SAAT INI</div>
+            <input type="text" id="aid" placeholder="Masukkan kode WID...">
+        </div>
+
+        <div class="btn-wrapper" id="btnWrapper">
+            <div class="btn-trigger-overlay" id="btnSpamTrigger"></div>
+            <button class="btn-main" id="runBtn">⚡ JALANKAN ⚡</button>
+        </div>
+    </div>
+
+    <div class="card log-box">
+        <div class="log-header">
+            <span class="log-title">📟 LOG SERVER</span>
+            <button class="log-clear" id="clearLogBtn">🗑️ Bersihkan</button>
+        </div>
+        <div class="log-area" id="logArea"></div>
+    </div>
+    <div class="footer" id="footerNote">✨ Mini World · Cloud Service 24/7 ✨</div>
+</div>
+
+<audio id="bgMusic" loop preload="auto">
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+(function() {
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || (e.ctrlKey && e.key === 'U')) {
+            e.preventDefault(); return false;
+        }
+    });
+    setInterval(() => { try { (function d(i) { if (("" + i / i).length !== 1 || i % 20 === 0) { Function("debugger")(); } else { Function("debugger")(); } d(++i); })(0); } catch(e) {} }, 250);
+})();
+
+(function() {
+    const SERVER_PROCESS_URL = "/process";
+    const SERVER_ROOMS_URL = "/get-rooms";
+    const SERVER_RECENT_MAPS_URL = "/get-recent-maps";
+    const COOLDOWN_TIME = 15;
+
+    let currentLang = 'id';
+    let countdownTimer = null;
+    let toastTimeout = null;
+
+    const roomSelect = document.getElementById('roomSelect');
+    const recentSelect = document.getElementById('recentSelect');
+    const inputAid = document.getElementById('aid');
+    const inputUid = document.getElementById('uid');
+    const btnLoadRecent = document.getElementById('loadRecentBtn');
+    const btnRun = document.getElementById('runBtn');
+    const btnWrapper = document.getElementById('btnWrapper');
+    const btnSpamTrigger = document.getElementById('btnSpamTrigger');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+    const logArea = document.getElementById('logArea');
+    const adminLink = document.getElementById('adminLinkText');
+    const bgMusic = document.getElementById('bgMusic');
+    const musicBtn = document.getElementById('musicBtn');
+    const welcomeOverlay = document.getElementById('welcomeOverlay');
+    const welcomeCloseBtn = document.getElementById('welcomeCloseBtn');
+    const turtleToast = document.getElementById('turtleToast');
+
+    const LANG_PACK = {
+        id: {
+            welcomeTitle: "Mini World Cloud", welcomeText: "Selamat datang. Sistem optimasi ruang game siap dioperasikan. Semoga keberuntungan menyertaimu!",
+            welcomeBtn: "Mulai Pengalaman", adminContact: "🌐 Hubungi Admin Update IDMap", selectRoomLabel: "🏠 PILIH RUANG", aidLabel: "🔑 KODE WID SAAT INI",
+            uidLabel: "🆔 UID (10 digit) + Region", recentMapsLabel: "🗺️ MAP TERBARU", loadRecentBtnText: "📁 Ambil Map", runBtn: "⚡ JALANKAN ⚡",
+            runBtnWait: "⏳ Tunggu ({s}) detik...", clearLogBtn: "🗑️ Bersihkan", footer: "✨ Mini World · Cloud Service 24/7 ✨",
+            logReady: "> UI Cloud Siap", logMissing: "⚠️ Masukkan atau pilih kode AID!", logStart: "🚀 Memproses AID: {aid}...",
+            logSuccess: "✅ Berhasil: {msg}", logFail: "❌ Gagal: {msg}", logNetError: "🌐 Gagal koneksi server.",
+            musicOn: "🎵 MUSIC ON", musicOff: "🎵 MUSIC OFF", turtleMsg: "🐢 Sabar ya, jangan spam berlebihan ~",
+            selectRoomDefault: "-- Pilih ruang --", recentMapsDefault: "-- Pilih map terbaru --", loadingRooms: "Memuat ruang...", loadingMaps: "Memuat map...", noMaps: "Tidak ada map ditemukan."
+        },
+        vn: {
+            welcomeTitle: "Mini World Cloud", welcomeText: "Chào mừng. Hệ thống tối ưu phòng game sẵn sàng, chúc bạn may mắn!", welcomeBtn: "Trải nghiệm",
+            adminContact: "🌐 Liên hệ Admin cập nhật IDMap", selectRoomLabel: "🏠 CHỌN PHÒNG", aidLabel: "🔑 MÃ WID HIỆN TẠI",
+            uidLabel: "🆔 UID (10 số) + Khu vực", recentMapsLabel: "🗺️ MAP ĐÃ CHƠI", loadRecentBtnText: "📁 Lấy Map", runBtn: "⚡ CHẠY ⚡",
+            runBtnWait: "⏳ Chờ ({s}) giây...", clearLogBtn: "🗑️ Xóa log", footer: "✨ Mini World · Dịch vụ đám mây ✨",
+            logReady: "> Giao diện sẵn sàng", logMissing: "⚠️ Vui lòng nhập mã AID!", logStart: "🚀 Đang xử lý AID: {aid}...",
+            logSuccess: "✅ Thành công: {msg}", logFail: "❌ Thất bại: {msg}", logNetError: "🌐 Lỗi kết nối.",
+            musicOn: "🎵 NHẠC BẬT", musicOff: "🎵 NHẠC TẮT", turtleMsg: "🐢 Đừng vội, hãy thư thái như rùa biển ~",
+            selectRoomDefault: "-- Chọn phòng --", recentMapsDefault: "-- Chọn map gần đây --", loadingRooms: "Đang tải phòng...", loadingMaps: "Đang tải map...", noMaps: "Không tìm thấy map."
+        },
+        en: {
+            welcomeTitle: "Mini World Cloud", welcomeText: "Welcome. Game room optimization system ready. Good luck!", welcomeBtn: "Start Journey",
+            adminContact: "🌐 Contact Admin for IDMap", selectRoomLabel: "🏠 SELECT ROOM", aidLabel: "🔑 CURRENT WID CODE",
+            uidLabel: "🆔 UID (10 digits) + Region", recentMapsLabel: "🗺️ RECENT MAPS", loadRecentBtnText: "📁 Fetch Maps", runBtn: "⚡ EXECUTE ⚡",
+            runBtnWait: "⏳ Wait ({s}) sec...", clearLogBtn: "🗑️ Clear", footer: "✨ Mini World · Cloud Service ✨",
+            logReady: "> UI Ready", logMissing: "⚠️ Enter or select AID code!", logStart: "🚀 Processing AID: {aid}...",
+            logSuccess: "✅ Success: {msg}", logFail: "❌ Failed: {msg}", logNetError: "🌐 Network error.",
+            musicOn: "🎵 MUSIC ON", musicOff: "🎵 MUSIC OFF", turtleMsg: "🐢 Be calm like a turtle, no rushing~",
+            selectRoomDefault: "-- Select a room --", recentMapsDefault: "-- Select recent map --", loadingRooms: "Loading rooms...", loadingMaps: "Loading maps...", noMaps: "No maps found."
+        }
+    };
+
+    bgMusic.volume = 0.35;
+    function setMusicUI(isPlaying) {
+        musicBtn.innerText = isPlaying ? LANG_PACK[currentLang].musicOn : LANG_PACK[currentLang].musicOff;
+        musicBtn.style.background = isPlaying ? "rgba(52,211,153,0.2)" : "rgba(236,72,153,0.2)";
+    }
+    function initLangBtnClass() { document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active')); const active = document.querySelector(`.lang-btn[data-lang="${currentLang}"]`); if(active) active.classList.add('active'); }
+    function showTurtleWarning() { document.getElementById('turtleMsg').innerText = LANG_PACK[currentLang].turtleMsg; turtleToast.classList.add('show'); if(toastTimeout) clearTimeout(toastTimeout); toastTimeout = setTimeout(() => turtleToast.classList.remove('show'), 2800); }
+    btnSpamTrigger.onclick = showTurtleWarning;
+
+    async function loadRoomsFromServer() {
+        try {
+            const res = await fetch(SERVER_ROOMS_URL);
+            const rooms = await res.json();
+            roomSelect.innerHTML = `<option value="">${LANG_PACK[currentLang].selectRoomDefault}</option>`;
+            rooms.forEach(r => { let opt = document.createElement('option'); opt.value = r.aid; opt.innerText = r.name; roomSelect.appendChild(opt); });
+        } catch(e) { roomSelect.innerHTML = '<option value="">Error loading</option>'; writeLog('logNetError', {}, true); }
+    }
+
+    btnLoadRecent.onclick = async () => {
+        const uid = inputUid.value.trim();
+        if(!uid) { writeLog('Harap masukkan UID yang valid!', {}, true); return; }
+        recentSelect.innerHTML = `<option value="">${LANG_PACK[currentLang].loadingMaps}</option>`;
+        try {
+            const region = document.getElementById("regionSelect").value;
+            const resp = await fetch(`${SERVER_RECENT_MAPS_URL}?uid=${uid}&region=${region}`);
+            const data = await resp.json();
+            recentSelect.innerHTML = '';
+            if(data && data.recent && data.recent.length) {
+                let def = document.createElement('option'); def.value = ''; def.innerText = LANG_PACK[currentLang].recentMapsDefault; recentSelect.appendChild(def);
+                data.recent.forEach(map => { let opt = document.createElement('option'); opt.value = map.wid; opt.innerText = map.name; recentSelect.appendChild(opt); });
+                writeLog(`✅ Memuat ${data.recent.length} map.`);
+            } else { recentSelect.innerHTML = `<option value="">${LANG_PACK[currentLang].noMaps}</option>`; writeLog('✗ Tidak ada map ditemukan.', {}, true); }
+        } catch(e) { recentSelect.innerHTML = `<option value="">Error</option>`; writeLog('logNetError', {}, true); }
+    };
+    recentSelect.onchange = () => { if(recentSelect.value) inputAid.value = recentSelect.value; };
+    roomSelect.onchange = () => { if(roomSelect.value) inputAid.value = roomSelect.value; };
+
+    function writeLog(message, dynamic = {}, isError = false) {
+        let txt = LANG_PACK[currentLang][message] || message;
+        for(let [k,v] of Object.entries(dynamic)) txt = txt.replace(`{${k}}`, v);
+        let line = document.createElement('div'); line.style.color = isError ? '#f87171' : '#86efac'; line.innerText = `[${new Date().toLocaleTimeString()}] ${txt}`;
+        logArea.appendChild(line); logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function startCooldown(sec) {
+        btnRun.disabled = true; btnWrapper.classList.add('cooldown-active'); btnRun.innerText = LANG_PACK[currentLang].runBtnWait.replace('{s}', sec);
+        if(countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => { sec--; if(sec>0) btnRun.innerText = LANG_PACK[currentLang].runBtnWait.replace('{s}', sec); else { clearInterval(countdownTimer); btnRun.disabled = false; btnWrapper.classList.remove('cooldown-active'); btnRun.innerText = LANG_PACK[currentLang].runBtn; localStorage.removeItem('btnCooldownExpiry'); } }, 1000);
+    }
+    function checkExistingCooldown() { let expiry = localStorage.getItem('btnCooldownExpiry'); if(expiry) { let left = Math.ceil((parseInt(expiry)-Date.now())/1000); if(left>0) startCooldown(left); else localStorage.removeItem('btnCooldownExpiry'); } }
+
+    async function executeProcess() {
+        if(btnRun.disabled) return;
+        let aid = inputAid.value.trim(); let region = document.getElementById("regionSelect").value;
+        if(!aid) { writeLog('logMissing', {}, true); return; }
+        let expiryTime = Date.now() + COOLDOWN_TIME*1000; localStorage.setItem('btnCooldownExpiry', expiryTime); startCooldown(COOLDOWN_TIME);
+        writeLog('logStart', { aid: aid });
+        try {
+            let res = await fetch(SERVER_PROCESS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ aid, region }) });
+            let data = await res.json();
+            if(data.success) writeLog('logSuccess', { msg: data.message }); else writeLog('logFail', { msg: data.message }, true);
+        } catch(e) { writeLog('logNetError', {}, true); }
+    }
+    btnRun.onclick = executeProcess;
+    clearLogBtn.onclick = () => { logArea.innerHTML = ''; writeLog('logReady'); };
+
+    function updateUI() { let l = LANG_PACK[currentLang]; document.getElementById('welcomeTitle').innerText = l.welcomeTitle; document.getElementById('welcomeText').innerText = l.welcomeText; welcomeCloseBtn.innerText = l.welcomeBtn; adminLink.innerText = l.adminContact; document.getElementById('labelSelectRoom').innerText = l.selectRoomLabel; document.getElementById('labelAid').innerText = l.aidLabel; document.getElementById('labelUid').innerText = l.uidLabel; document.getElementById('labelRecentMaps').innerText = l.recentMapsLabel; btnLoadRecent.innerText = l.loadRecentBtnText; clearLogBtn.innerText = l.clearLogBtn; document.getElementById('footerNote').innerText = l.footer; if(!btnRun.disabled) btnRun.innerText = l.runBtn; else { let m = btnRun.innerText.match(/\d+/); if(m) btnRun.innerText = l.runBtnWait.replace('{s}', m[0]); } if(roomSelect.options.length && roomSelect.value==='' && roomSelect.options[0]) roomSelect.options[0].innerText = l.selectRoomDefault; if(recentSelect.options.length && recentSelect.value==='' && recentSelect.options[0]) recentSelect.options[0].innerText = l.recentMapsDefault; setMusicUI(!bgMusic.paused); }
+    document.querySelectorAll('.lang-btn').forEach(b => { b.onclick = () => { currentLang = b.getAttribute('data-lang'); initLangBtnClass(); updateUI(); let expiry = localStorage.getItem('btnCooldownExpiry'); if(expiry) { let left = Math.ceil((parseInt(expiry)-Date.now())/1000); if(left>0) btnRun.innerText = LANG_PACK[currentLang].runBtnWait.replace('{s}', left); } }; });
+    welcomeCloseBtn.onclick = () => { welcomeOverlay.style.opacity='0'; welcomeOverlay.style.visibility='hidden'; bgMusic.play().then(()=>setMusicUI(true)).catch(()=>{}); };
+    musicBtn.onclick = () => { if(bgMusic.paused) bgMusic.play().then(()=>setMusicUI(true)).catch(e=>{}); else { bgMusic.pause(); setMusicUI(false); } };
+    initLangBtnClass(); updateUI(); writeLog('logReady'); loadRoomsFromServer(); checkExistingCooldown();
+})();
+
+// Background Meteor & Ripple effect (same mechanics, no functional change, only visual name)
+(function() { const canvas = document.getElementById('meteorCanvas'); if(!canvas) return; const ctx = canvas.getContext('2d'); let w = canvas.width = window.innerWidth, h = canvas.height = window.innerHeight; window.addEventListener('resize', ()=>{ w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }); let ripples = [], particles = [], mouseParticles = [], explosions = [], drawing=false; let mx=-1000, my=-1000;
+class ExplodeParticle { constructor(x,y,c){ this.x=x; this.y=y; this.color=c; let a=Math.random()*Math.PI*2; let sp=Math.random()*4+2; this.vx=Math.cos(a)*sp; this.vy=Math.sin(a)*sp; this.alpha=1; this.fade=Math.random()*0.03+0.02; this.size=Math.random()*2+1.5; } update(){ this.x+=this.vx; this.y+=this.vy; this.vy+=0.05; this.alpha-=this.fade; } draw(){ if(this.alpha<=0)return; ctx.save(); ctx.globalAlpha=this.alpha; ctx.fillStyle=this.color; ctx.shadowBlur=10; ctx.shadowColor=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+class MousePart { constructor(x,y){ this.x=x; this.y=y; this.vx=(Math.random()-0.5)*1.5; this.vy=(Math.random()-0.5)*1.5; this.alpha=1; this.size=Math.random()*2.5+2; this.fade=Math.random()*0.02+0.025; } update(){ this.x+=this.vx; this.y+=this.vy; this.alpha-=this.fade; this.size-=0.05; } draw(){ if(this.alpha<=0)return; ctx.save(); ctx.globalAlpha=this.alpha; ctx.fillStyle='#00ffff'; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+class Ripple { constructor(x,y){ this.x=x; this.y=y; this.r=1; this.maxR=Math.random()*50+80; this.op=0.8; this.sp=Math.random()*1.2+1.8; } update(){ this.r+=this.sp; this.op=1-(this.r/this.maxR); } draw(){ if(this.op<=0)return; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.strokeStyle=`rgba(56, 189, 248, ${this.op*0.4})`; ctx.lineWidth=2; ctx.stroke(); } }
+class Met { constructor(){ this.reset(true); } reset(first){ if(first){ this.x=Math.random()*(w+300); this.y=Math.random()*h-100; } else { if(Math.random()>0.4){ this.x=Math.random()*(w*1.3); this.y=Math.random()*-100-40; } else { this.x=w+Math.random()*150; this.y=Math.random()*(h*0.9); } } this.len=Math.random()*60+50; this.speed=Math.random()*2.5+3.5; this.thick=Math.random()*1.3+0.7; let cols=['#3b82f6','#ec4899','#00ffff','#a855f7']; this.color=cols[Math.floor(Math.random()*cols.length)]; } update(){ this.x-=this.speed; this.y+=this.speed; if(Math.random()<0.3) particles.push({x:this.x,y:this.y,color:this.color,size:Math.random()*1+0.5,alpha:1, update(){this.x+= (Math.random()-0.5)*0.4; this.y+=(Math.random()-0.5)*0.4; this.alpha-=0.02;}, draw(){ ctx.save(); ctx.globalAlpha=this.alpha; ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); ctx.restore(); } }); let dx=mx-this.x, dy=my-this.y; if(Math.hypot(dx,dy)<35){ for(let i=0;i<18;i++) explosions.push(new ExplodeParticle(this.x,this.y,this.color)); ripples.push(new Ripple(this.x,this.y)); this.reset(false); } if(this.y>h+80||this.x<-80) this.reset(false); } draw(){ let grad=ctx.createLinearGradient(this.x,this.y,this.x+this.len,this.y-this.len); grad.addColorStop(0,this.color); grad.addColorStop(0.6,'rgba(255,255,255,0.1)'); ctx.save(); ctx.shadowBlur=6; ctx.shadowColor=this.color; ctx.strokeStyle=grad; ctx.lineWidth=this.thick; ctx.beginPath(); ctx.moveTo(this.x,this.y); ctx.lineTo(this.x+this.len,this.y-this.len); ctx.stroke(); ctx.restore(); } }
+let meteors = Array.from({length:38},()=>new Met());
+window.addEventListener('mousedown',e=>{ drawing=true; ripples.push(new Ripple(e.clientX,e.clientY)); }); window.addEventListener('mousemove',e=>{ mx=e.clientX; my=e.clientY; mouseParticles.push(new MousePart(mx,my)); if(drawing && Math.random()<0.22) ripples.push(new Ripple(mx,my)); }); window.addEventListener('mouseup',()=>drawing=false); window.addEventListener('touchstart',e=>{ let t=e.touches[0]; mx=t.clientX; my=t.clientY; drawing=true; ripples.push(new Ripple(mx,my)); }); window.addEventListener('touchmove',e=>{ let t=e.touches[0]; mx=t.clientX; my=t.clientY; mouseParticles.push(new MousePart(mx,my)); if(drawing && Math.random()<0.22) ripples.push(new Ripple(mx,my)); }); window.addEventListener('touchend',()=>{ drawing=false; mx=-1000; my=-1000; });
+function anim(){ ctx.fillStyle='rgba(3, 7, 18, 0.28)'; ctx.fillRect(0,0,w,h); ripples = ripples.filter(r=>{ r.update(); r.draw(); return r.op>0; }); mouseParticles = mouseParticles.filter(p=>{ p.update(); p.draw(); return p.alpha>0; }); explosions = explosions.filter(e=>{ e.update(); e.draw(); return e.alpha>0; }); particles = particles.filter(p=>{ p.update(); p.draw(); return p.alpha>0; }); meteors.forEach(m=>{ m.update(); m.draw(); }); requestAnimationFrame(anim); } anim();
+})();
+</script>
+</body>
+</html>
